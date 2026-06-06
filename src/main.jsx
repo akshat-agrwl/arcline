@@ -4,7 +4,7 @@ import "./styles.css";
 import LifeGraphApp from "./LifeGraphApp.jsx";
 import { isConfigured } from "./supabase";
 import { useSession, signInWithGoogle, signOut } from "./auth";
-import { loadGraph, saveGraph } from "./storage";
+import { defaultState, loadLocal, saveLocal, saveGraph, resolveForUser } from "./storage";
 
 function Splash({ text }) {
   return (
@@ -25,72 +25,78 @@ function GoogleIcon() {
   );
 }
 
-function LoginScreen() {
+// Pops up on save/export intent for anonymous users. Dismissible — never a wall.
+function AuthPrompt({ onClose }) {
   const [busy, setBusy] = React.useState(false);
-  const onClick = async () => {
+  const onSignIn = async () => {
     setBusy(true);
-    const { error } = await signInWithGoogle();
+    const { error } = await signInWithGoogle(); // full-page redirect; resolves on return
     if (error) setBusy(false);
   };
   return (
-    <div className="lg-center">
-      <div className="lg-login-card">
-        <h1 className="lg-login-title">ArcLine</h1>
-        <p className="lg-login-sub">map how full each chapter felt — the ups and the downs</p>
-        <button className="lg-google" onClick={onClick} disabled={busy}>
+    <div className="lg-modal-overlay" onClick={onClose}>
+      <div className="lg-login-card" onClick={(e) => e.stopPropagation()}>
+        <button className="lg-x lg-modal-x" onClick={onClose} aria-label="close">✕</button>
+        <h1 className="lg-login-title">Save your graph</h1>
+        <p className="lg-login-sub">sign in to keep it and pick up from any device</p>
+        <button className="lg-google" onClick={onSignIn} disabled={busy || !isConfigured}>
           <GoogleIcon />
           {busy ? "Redirecting…" : "Continue with Google"}
         </button>
-        <p className="lg-login-note">
-          Your graph is private to your account and synced to your browser so it’s
-          there on every device.
-        </p>
+        {isConfigured ? (
+          <p className="lg-login-note">
+            Your graph stays private to your account. We’ll bring over everything
+            you’ve made so far.
+          </p>
+        ) : (
+          <p className="lg-err">
+            Sign-in isn’t configured yet (missing Supabase env vars). Your graph is
+            still saved in this browser.
+          </p>
+        )}
       </div>
     </div>
   );
 }
 
-function GraphLoader({ session }) {
-  const userId = session.user.id;
-  const [state, setState] = React.useState(null);
+function Root() {
+  const { session, loading } = useSession();
+  const [data, setData] = React.useState(null);
+  const [promptOpen, setPromptOpen] = React.useState(false);
+  const userId = session ? session.user.id : null;
 
+  // Load the right graph: account graph if signed in (migrating local on first
+  // sign-in), else the anonymous local graph / sample arc.
   React.useEffect(() => {
     let alive = true;
-    setState(null);
-    loadGraph(userId).then((s) => { if (alive) setState(s); });
+    setData(null);
+    const p = userId ? resolveForUser(userId) : Promise.resolve(loadLocal() || defaultState());
+    p.then((s) => { if (alive) setData(s); });
     return () => { alive = false; };
   }, [userId]);
 
-  const onPersist = React.useCallback((payload) => { saveGraph(userId, payload); }, [userId]);
+  const onPersist = React.useCallback((payload) => {
+    if (userId) saveGraph(userId, payload);
+    else saveLocal(payload);
+  }, [userId]);
 
-  if (!state) return <Splash text="opening your graph…" />;
+  if (loading) return <Splash text="…" />;
+  if (!data) return <Splash text="opening your graph…" />;
+
+  const account = session ? { email: session.user.email, onSignOut: signOut } : null;
 
   return (
-    <LifeGraphApp
-      initialState={state}
-      account={{ email: session.user.email, onSignOut: signOut }}
-      onPersist={onPersist}
-    />
+    <>
+      <LifeGraphApp
+        key={userId || "anon"}
+        initialState={data}
+        account={account}
+        onPersist={onPersist}
+        onRequestAuth={() => setPromptOpen(true)}
+      />
+      {promptOpen && !session ? <AuthPrompt onClose={() => setPromptOpen(false)} /> : null}
+    </>
   );
-}
-
-function Root() {
-  const { session, loading } = useSession();
-
-  if (!isConfigured) {
-    return (
-      <div className="lg-center">
-        <p className="lg-splash">Almost there</p>
-        <p className="lg-err">
-          Supabase isn’t configured. Copy <code>.env.example</code> to <code>.env</code>,
-          fill in your project URL and anon key, then restart <code>npm run dev</code>.
-        </p>
-      </div>
-    );
-  }
-  if (loading) return <Splash text="…" />;
-  if (!session) return <LoginScreen />;
-  return <GraphLoader session={session} />;
 }
 
 ReactDOM.createRoot(document.getElementById("root")).render(<Root />);

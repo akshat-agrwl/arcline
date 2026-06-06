@@ -1,8 +1,8 @@
 import { supabase } from "./supabase";
 
-// The whole graph is one document. We store it as a single JSONB row per user
-// (see supabase/schema.sql) — there is no query we ever run across events, so
-// normalizing them into tables would be pure overhead.
+// The whole graph is one document. For signed-in users it's a single JSONB row
+// per user (see supabase/schema.sql); anonymous users keep it in localStorage
+// until they sign in, at which point it's migrated to their account.
 const DEFAULT_EVENTS = [
   { id: "e1", title: "Born",                    note: "the beginning", age: 0,  sat: 56 },
   { id: "e2", title: "Started school",          note: "age 5",         age: 5,  sat: 70 },
@@ -21,30 +21,43 @@ export function defaultState() {
   };
 }
 
+const valid = (s) => s && Array.isArray(s.events) && s.events.length > 0;
+
+// ---- anonymous (pre–sign-in) storage ----
+const LOCAL_KEY = "lifegraph.local.v1";
+
+export function loadLocal() {
+  try {
+    const o = JSON.parse(localStorage.getItem(LOCAL_KEY));
+    if (valid(o)) return o;
+  } catch (e) {}
+  return null;
+}
+
+export function saveLocal(state) {
+  try { localStorage.setItem(LOCAL_KEY, JSON.stringify(state)); } catch (e) {}
+}
+
+// ---- authenticated per-user cache (fast paint + offline) ----
 const cacheKey = (userId) => `lifegraph.cache.${userId}`;
 
 function readCache(userId) {
   try {
-    const raw = localStorage.getItem(cacheKey(userId));
-    if (raw) {
-      const o = JSON.parse(raw);
-      if (o && o.events && o.events.length) return o;
-    }
+    const o = JSON.parse(localStorage.getItem(cacheKey(userId)));
+    if (valid(o)) return o;
   } catch (e) {}
   return null;
 }
 
 function writeCache(userId, state) {
-  try {
-    localStorage.setItem(cacheKey(userId), JSON.stringify(state));
-  } catch (e) {}
+  try { localStorage.setItem(cacheKey(userId), JSON.stringify(state)); } catch (e) {}
 }
 
-// Server is the source of truth. We mirror to localStorage so a reload paints
-// instantly and the app still works offline. On network failure we fall back
-// to the cache, then to the sample arc.
-export async function loadGraph(userId) {
-  const cached = readCache(userId);
+// Resolve the graph to show right after a user is signed in.
+// - If their account already has a graph, that wins (their synced data).
+// - If not (first sign-in), seed it from whatever they built anonymously,
+//   migrating that local graph up to the account.
+export async function resolveForUser(userId) {
   try {
     const { data, error } = await supabase
       .from("graphs")
@@ -52,15 +65,17 @@ export async function loadGraph(userId) {
       .eq("user_id", userId)
       .maybeSingle();
     if (error) throw error;
-    if (data && data.data && data.data.events && data.data.events.length) {
+    if (valid(data && data.data)) {
       writeCache(userId, data.data);
       return data.data;
     }
-    // No row yet (first sign-in): seed with cache if present, else the sample arc.
-    return cached || defaultState();
+    // No account row yet → migrate the anonymous/local graph (or sample arc).
+    const seed = loadLocal() || readCache(userId) || defaultState();
+    await saveGraph(userId, seed);
+    return seed;
   } catch (e) {
-    console.warn("loadGraph: falling back to local cache", e);
-    return cached || defaultState();
+    console.warn("resolveForUser: falling back to local cache", e);
+    return readCache(userId) || loadLocal() || defaultState();
   }
 }
 

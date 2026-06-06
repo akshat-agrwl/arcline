@@ -120,7 +120,7 @@ const EMOJI_LIB = [
   { e: "⚓", k: "anchor stable steady ground" },
 ];
 
-export default function LifeGraphApp({ initialState, account, onPersist }) {
+export default function LifeGraphApp({ initialState, account, onPersist, onRequestAuth }) {
   const init = React.useRef(initialState).current;
   const [events, setEvents] = React.useState(init.events);
   const [title, setTitle] = React.useState(init.title);
@@ -347,6 +347,8 @@ export default function LifeGraphApp({ initialState, account, onPersist }) {
       });
     } catch (e) { /* no-op */ }
     setExporting(false);
+    // export = intent to keep it → nudge anonymous users to save to an account
+    if (!account && onRequestAuth) onRequestAuth();
   }
 
   React.useEffect(() => {
@@ -392,7 +394,11 @@ export default function LifeGraphApp({ initialState, account, onPersist }) {
               <span className="lg-acct-email">{account.email}</span>
               <button className="lg-acct-btn" onClick={account.onSignOut}>sign out</button>
             </div>
-          ) : null}
+          ) : (
+            <div className="lg-account">
+              <button className="lg-acct-btn lg-acct-save" onClick={onRequestAuth}>Sign in to save</button>
+            </div>
+          )}
           <div className="lg-legend">
             <span><i className="sw" style={{ background: COL.growth }}></i>climbing</span>
             <span><i className="sw" style={{ background: COL.decline }}></i>harder days</span>

@@ -1,0 +1,159 @@
+:root {
+  --paper: #F3ECDC; --paper2: #ECE3CF; --ink: #2E2A24; --inkSoft: #6B6457;
+  --line: #d8cdb2; --gold: #C98A2B; --terra: #C2603C; --growth: #5E7F2E; --decline: #C0573A;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: "Spectral", serif; color: var(--ink);
+  background:
+    radial-gradient(120% 130% at 12% 0%, #F7F1E3 0%, #F1E8D4 55%, #ECE2CC 100%);
+  overflow: hidden;
+}
+#root { height: 100%; }
+
+.lg-wrap { height: 100%; display: flex; flex-direction: column; }
+
+.lg-head {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 24px; padding: 22px 34px 10px; flex: 0 0 auto;
+}
+.lg-title {
+  font-family: "Spectral", serif; font-style: italic; font-weight: 600;
+  font-size: 34px; margin: 0; line-height: 1.05; outline: none;
+}
+.lg-title:focus, .lg-sub:focus { background: rgba(201,138,43,.12); border-radius: 4px; }
+.lg-sub {
+  font-family: "Caveat", cursive; font-size: 22px; color: var(--terra);
+  margin: 4px 0 0; outline: none;
+}
+.lg-head-r { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
+.lg-legend { display: flex; gap: 18px; font-family: "Caveat", cursive; font-size: 19px; color: var(--inkSoft); }
+.lg-legend span { display: inline-flex; align-items: center; gap: 7px; }
+.lg-legend .sw { width: 16px; height: 6px; border-radius: 3px; display: inline-block; }
+.lg-add {
+  font-family: "Spectral", serif; font-weight: 500; font-size: 15px; letter-spacing: .2px;
+  color: var(--paper); background: var(--ink); border: none; padding: 9px 16px;
+  border-radius: 999px; cursor: pointer; box-shadow: 0 3px 0 rgba(46,42,36,.25);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.lg-add:hover { transform: translateY(-1px); box-shadow: 0 5px 0 rgba(46,42,36,.25); }
+.lg-add:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(46,42,36,.25); }
+
+/* account / sign-out control in the header */
+.lg-account { display: flex; align-items: center; gap: 10px; font-family: "Caveat", cursive; font-size: 17px; color: var(--inkSoft); }
+.lg-acct-email { max-width: 220px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lg-acct-btn {
+  font-family: "Spectral", serif; font-size: 12px; letter-spacing: .3px; text-transform: uppercase;
+  color: var(--inkSoft); background: transparent; border: 1px solid #C9BC9E; border-radius: 999px;
+  padding: 4px 11px; cursor: pointer;
+}
+.lg-acct-btn:hover { background: #EDE3CE; color: var(--ink); }
+
+.lg-stage { position: relative; flex: 1 1 auto; min-height: 0; padding: 0 26px 8px; }
+.lg-svg {
+  display: block; width: 100%; height: 100%;
+  max-height: calc(100vh - 132px);
+  touch-action: none; -webkit-user-select: none; user-select: none;
+}
+.t-hand { font-family: "Caveat", cursive; }
+.t-ital { font-family: "Spectral", serif; font-style: italic; }
+.t-era { font-family: "Spectral", serif; font-size: 14px; letter-spacing: 3px; text-transform: uppercase; }
+
+.lg-hint {
+  position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; margin: 0;
+  font-family: "Caveat", cursive; font-size: 18px; color: #9b9079; pointer-events: none;
+}
+
+.lg-pop {
+  position: fixed; transform: translate(-50%, calc(-100% - 70px)); z-index: 30;
+  width: 268px; background: #FBF6EA; border: 1.5px solid #D8CBAC;
+  border-radius: 12px; padding: 14px 14px 12px;
+  box-shadow: 0 14px 36px rgba(60,48,30,.28); display: flex; flex-direction: column; gap: 9px;
+}
+.lg-pop::after {
+  content: ""; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%) rotate(45deg);
+  width: 16px; height: 16px; background: #FBF6EA; border-right: 1.5px solid #D8CBAC; border-bottom: 1.5px solid #D8CBAC;
+}
+.lg-pop-row { display: flex; align-items: center; gap: 8px; }
+.lg-in-title {
+  flex: 1; font-family: "Spectral", serif; font-weight: 600; font-size: 16px; color: var(--ink);
+  border: none; border-bottom: 1.5px solid #D8CBAC; background: transparent; padding: 3px 2px; outline: none;
+}
+.lg-in-title:focus { border-color: var(--gold); }
+.lg-x { border: none; background: transparent; color: #b3a888; font-size: 15px; cursor: pointer; padding: 2px 4px; }
+.lg-x:hover { color: var(--ink); }
+.lg-in {
+  font-family: "Caveat", cursive; font-size: 18px; color: var(--inkSoft);
+  border: none; border-bottom: 1px dashed #D2C5A6; background: transparent; padding: 2px 2px 4px; outline: none;
+}
+.lg-in:focus { border-color: var(--gold); }
+.lg-lab {
+  font-family: "Spectral", serif; font-size: 12px; letter-spacing: .2px; color: var(--inkSoft);
+  text-transform: uppercase; white-space: nowrap; display: flex; flex-direction: column; gap: 4px;
+}
+.lg-lab input[type=range] { accent-color: var(--terra); width: 100%; }
+.lg-del {
+  margin-top: 2px; font-family: "Spectral", serif; font-size: 13px; color: #a14a36;
+  background: transparent; border: 1px solid #e3c6bd; border-radius: 8px; padding: 6px; cursor: pointer;
+}
+.lg-del:hover { background: #f4e2dc; }
+.lg-pop.below { transform: translate(-50%, 64px); }
+.lg-pop.below::after { top: -9px; bottom: auto; border-right: none; border-bottom: none; border-left: 1.5px solid #D8CBAC; border-top: 1.5px solid #D8CBAC; }
+.lg-emoji { display: flex; flex-wrap: wrap; gap: 4px; }
+.lg-em {
+  font-size: 17px; line-height: 1; width: 30px; height: 30px; padding: 0;
+  border: 1.5px solid transparent; border-radius: 8px; background: #F1E8D4; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.lg-em:hover { background: #E9DEC4; }
+.lg-em.on { border-color: var(--gold); background: #FBEFD3; }
+.lg-more { font-size: 15px; color: #8a7f64; }
+.lg-emolib { display: flex; flex-direction: column; gap: 6px; }
+.lg-emsearch {
+  font-family: "Spectral", serif; font-size: 13px; border: none; border-bottom: 1.5px solid #D8CBAC;
+  background: transparent; padding: 5px 2px; outline: none; color: var(--ink);
+}
+.lg-emsearch:focus { border-color: var(--gold); }
+.lg-emgrid { display: flex; flex-wrap: wrap; gap: 4px; max-height: 132px; overflow-y: auto; }
+.lg-scale { display: flex; justify-content: space-between; font-size: 15px; margin-top: 3px; padding: 0 1px; opacity: .9; }
+.lg-btns { display: flex; gap: 10px; }
+.lg-add:disabled { opacity: .55; cursor: default; }
+.lg-add.ghost { background: transparent; color: var(--ink); box-shadow: none; border: 1.5px solid #C9BC9E; }
+.lg-add.ghost:hover { background: #EDE3CE; transform: translateY(-1px); box-shadow: none; }
+.lg-add.ghost:active { transform: translateY(1px); }
+
+/* entrance — transition-based (settles to a visible final state) */
+.lg-line { clip-path: inset(0 100% 0 0); transition: clip-path 1.25s cubic-bezier(.4,0,.1,1); }
+.lg-line.in { clip-path: inset(0 0 0 0); }
+.lg-flag { opacity: 0; transform: translateY(7px); transition: opacity .5s ease, transform .5s ease; }
+.lg-flag.in { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion: reduce) {
+  .lg-line, .lg-line.in { clip-path: none; transition: none; }
+  .lg-flag, .lg-flag.in { opacity: 1; transform: none; transition: none; }
+}
+
+/* ---- login + loading screens ---- */
+.lg-center {
+  height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 18px; padding: 24px; text-align: center;
+}
+.lg-login-card {
+  background: #FBF6EA; border: 1.5px solid #D8CBAC; border-radius: 16px;
+  box-shadow: 0 14px 40px rgba(60,48,30,.18); padding: 38px 40px 34px;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; max-width: 380px;
+}
+.lg-login-title { font-family: "Spectral", serif; font-style: italic; font-weight: 600; font-size: 30px; margin: 0; }
+.lg-login-sub { font-family: "Caveat", cursive; font-size: 21px; color: var(--terra); margin: 0; line-height: 1.3; }
+.lg-google {
+  margin-top: 8px; display: inline-flex; align-items: center; gap: 10px;
+  font-family: "Spectral", serif; font-weight: 500; font-size: 15px; color: var(--ink);
+  background: #fff; border: 1.5px solid #D8CBAC; border-radius: 999px; padding: 11px 22px; cursor: pointer;
+  box-shadow: 0 3px 0 rgba(46,42,36,.16); transition: transform .12s ease, box-shadow .12s ease;
+}
+.lg-google:hover { transform: translateY(-1px); box-shadow: 0 5px 0 rgba(46,42,36,.16); }
+.lg-google:active { transform: translateY(1px); box-shadow: 0 1px 0 rgba(46,42,36,.16); }
+.lg-google:disabled { opacity: .6; cursor: default; }
+.lg-login-note { font-family: "Spectral", serif; font-size: 12.5px; color: var(--inkSoft); max-width: 300px; line-height: 1.5; }
+.lg-splash { font-family: "Caveat", cursive; font-size: 24px; color: var(--inkSoft); }
+.lg-err { font-family: "Spectral", serif; font-size: 13px; color: #a14a36; max-width: 320px; line-height: 1.5; }

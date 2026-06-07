@@ -3,21 +3,22 @@ import { supabase } from "./supabase";
 // The whole graph is one document. For signed-in users it's a single JSONB row
 // per user (see supabase/schema.sql); anonymous users keep it in localStorage
 // until they sign in, at which point it's migrated to their account.
+// A neutral, illustrative starter arc — meant to be edited/replaced, not to
+// describe any real person. Shows the green-up / red-down line at a glance.
 const DEFAULT_EVENTS = [
-  { id: "e1", title: "Born",                    note: "the beginning", age: 0,  sat: 56 },
-  { id: "e2", title: "Started school",          note: "age 5",         age: 5,  sat: 70 },
-  { id: "e3", title: "Most popular in class",   note: "8th grade",     age: 13, sat: 93 },
-  { id: "e4", title: "Started college",         note: "age 18",        age: 18, sat: 75 },
-  { id: "e5", title: "Low self-esteem",         note: "3rd year",      age: 20, sat: 25 },
-  { id: "e6", title: "Started my job",          note: "age 22",        age: 22, sat: 63 },
-  { id: "e7", title: "First international trip", note: "today",         age: 25, sat: 90 },
+  { id: "e1", title: "Born",            note: "the beginning", age: 0,  sat: 55 },
+  { id: "e2", title: "Childhood",       note: "early years",   age: 7,  sat: 74 },
+  { id: "e3", title: "School years",    note: "",              age: 15, sat: 58 },
+  { id: "e4", title: "A low point",     note: "",              age: 20, sat: 30 },
+  { id: "e5", title: "Turning point",   note: "",              age: 24, sat: 66 },
+  { id: "e6", title: "Today",           note: "where I am now", age: 28, sat: 82 },
 ];
 
 export function defaultState() {
   return {
     events: DEFAULT_EVENTS,
     title: "My life, so far",
-    subtitle: "how full each chapter felt — drag a point to set the feeling",
+    subtitle: "how full each chapter felt — tap a moment to edit it",
   };
 }
 

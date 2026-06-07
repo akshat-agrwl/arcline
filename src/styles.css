@@ -6,7 +6,10 @@
 html, body { margin: 0; height: 100%; }
 body {
   font-family: "Spectral", serif; color: var(--ink);
+  /* paper grain (page-wide, seamlessly tiled) over the warm gradient — replaces
+     the old in-SVG grain rect, which read as a faint rectangle on the page */
   background:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.045 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"),
     radial-gradient(120% 130% at 12% 0%, #F7F1E3 0%, #F1E8D4 55%, #ECE2CC 100%);
   overflow: hidden;
 }
@@ -60,10 +63,35 @@ body {
 .t-ital { font-family: "Spectral", serif; font-style: italic; }
 .t-era { font-family: "Spectral", serif; font-size: 14px; letter-spacing: 3px; text-transform: uppercase; }
 
-.lg-hint {
-  position: absolute; left: 0; right: 0; bottom: 6px; text-align: center; margin: 0;
-  font-family: "Caveat", cursive; font-size: 18px; color: #9b9079; pointer-events: none;
+/* tips revealed on hover/focus of the "?" so they don't crowd the canvas */
+.lg-help { position: absolute; right: 22px; bottom: 16px; z-index: 22; width: 34px; height: 34px; }
+.lg-help-btn {
+  width: 34px; height: 34px; border-radius: 999px; cursor: help; padding: 0;
+  font-family: "Spectral", serif; font-size: 17px; font-weight: 600; line-height: 1;
+  color: var(--inkSoft); background: #FBF6EA; border: 1.5px solid #D8CBAC;
+  box-shadow: 0 3px 10px rgba(60,48,30,.14); transition: transform .12s ease, color .12s ease, background .12s ease;
 }
+.lg-help:hover .lg-help-btn, .lg-help-btn:focus-visible { transform: translateY(-1px); color: var(--ink); background: #F4EBD6; }
+.lg-help-card {
+  position: absolute; right: 0; bottom: calc(100% + 12px);
+  width: 268px; background: #FBF6EA; border: 1.5px solid #D8CBAC; border-radius: 12px;
+  box-shadow: 0 14px 34px rgba(60,48,30,.22); padding: 13px 16px 14px;
+  opacity: 0; visibility: hidden; transform: translateY(6px); pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease, visibility .16s;
+}
+/* transparent bridge so moving from the button to the card keeps it open */
+.lg-help-card::after { content: ""; position: absolute; left: 0; right: 0; bottom: -14px; height: 14px; }
+.lg-help:hover .lg-help-card, .lg-help:focus-within .lg-help-card {
+  opacity: 1; visibility: visible; transform: translateY(0); pointer-events: auto;
+}
+.lg-help-title {
+  font-family: "Spectral", serif; font-weight: 600; font-size: 11px; letter-spacing: 1.5px;
+  text-transform: uppercase; color: var(--gold); margin: 0 0 9px;
+}
+.lg-help-card ul { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 7px; }
+.lg-help-card li { font-family: "Spectral", serif; font-size: 13px; line-height: 1.35; color: var(--inkSoft); }
+.lg-help-card b { color: var(--ink); font-weight: 600; }
+@media (prefers-reduced-motion: reduce) { .lg-help-card { transition: none; } }
 
 .lg-pop {
   position: fixed; transform: translate(-50%, calc(-100% - 70px)); z-index: 30;
@@ -75,6 +103,35 @@ body {
   content: ""; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%) rotate(45deg);
   width: 16px; height: 16px; background: #FBF6EA; border-right: 1.5px solid #D8CBAC; border-bottom: 1.5px solid #D8CBAC;
 }
+
+/* phase editor popover — anchored above the phase label band */
+.lg-era-label { cursor: pointer; }
+.lg-phase-pop {
+  position: fixed; transform: translate(-50%, calc(-100% - 14px)); z-index: 30; width: 224px;
+  background: #FBF6EA; border: 1.5px solid #D8CBAC; border-radius: 12px; padding: 13px 14px 12px;
+  box-shadow: 0 14px 36px rgba(60,48,30,.28); display: flex; flex-direction: column; gap: 10px;
+  animation: lg-pop-in .16s cubic-bezier(.2,.8,.3,1);
+}
+.lg-phase-pop::after {
+  content: ""; position: absolute; left: 50%; bottom: -9px; transform: translateX(-50%) rotate(45deg);
+  width: 16px; height: 16px; background: #FBF6EA; border-right: 1.5px solid #D8CBAC; border-bottom: 1.5px solid #D8CBAC;
+}
+.lg-phase-x { position: absolute; top: 8px; right: 9px; font-size: 13px; line-height: 1; }
+.lg-phase-name { padding-right: 18px; }
+.lg-phase-from {
+  width: 72px; font-family: "Spectral", serif; font-size: 14px; color: var(--ink);
+  border: 1.5px solid #D8CBAC; border-radius: 7px; background: #fff; padding: 4px 6px; outline: none;
+}
+.lg-phase-from:focus { border-color: var(--gold); }
+.lg-phase-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 1px; }
+.lg-phase-add {
+  font-family: "Spectral", serif; font-size: 13px; color: var(--ink);
+  background: transparent; border: 1px solid #C9BC9E; border-radius: 8px; padding: 6px 10px; cursor: pointer;
+}
+.lg-phase-add:hover { background: #EDE3CE; }
+.lg-phase-actions .lg-del { margin-top: 0; }
+.lg-del:disabled { opacity: .45; cursor: default; }
+@media (prefers-reduced-motion: reduce) { .lg-phase-pop { animation: none; } }
 .lg-pop-row { display: flex; align-items: center; gap: 8px; }
 .lg-in-title {
   flex: 1; font-family: "Spectral", serif; font-weight: 600; font-size: 16px; color: var(--ink);
@@ -122,6 +179,7 @@ body {
 .lg-add.ghost { background: transparent; color: var(--ink); box-shadow: none; border: 1.5px solid #C9BC9E; }
 .lg-add.ghost:hover { background: #EDE3CE; transform: translateY(-1px); box-shadow: none; }
 .lg-add.ghost:active { transform: translateY(1px); }
+.lg-undo-ico { display: inline-block; transform: translateY(3px); }
 
 /* entrance — transition-based (settles to a visible final state) */
 .lg-line { clip-path: inset(0 100% 0 0); transition: clip-path 1.25s cubic-bezier(.4,0,.1,1); }

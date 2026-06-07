@@ -17,11 +17,14 @@ const COL = {
 
 const EMOJI = ["🎓", "🏆", "🎂", "❤️", "🏠", "✈️", "💼", "🎉", "🌱", "⭐", "😢", "🐣"];
 
+// Phases are open-ended: each runs from its `from` age until the next phase
+// begins (the last runs to wherever the graph currently ends). Labels are
+// editable and persisted, so they follow the user's data instead of being a
+// fixed, decorative band.
 const DEFAULT_ERAS = [
-  { from: 0, to: 5, label: "Childhood" },
-  { from: 5, to: 18, label: "School" },
-  { from: 18, to: 22, label: "College" },
-  { from: 22, to: 99, label: "Work" },
+  { from: 0, label: "Childhood" },
+  { from: 7, label: "Growing up" },
+  { from: 18, label: "Adulthood" },
 ];
 
 const uid = () => "e" + Math.random().toString(36).slice(2, 8);
@@ -118,6 +121,68 @@ const EMOJI_LIB = [
   { e: "📱", k: "phone tech app" },
   { e: "🔬", k: "science research lab" },
   { e: "⚓", k: "anchor stable steady ground" },
+  // faces / expressions
+  { e: "😀", k: "happy smile grin face glad" },
+  { e: "😃", k: "happy smile face joy" },
+  { e: "😄", k: "happy smile laugh face joy" },
+  { e: "😁", k: "grin happy face beam" },
+  { e: "😆", k: "laugh happy face haha" },
+  { e: "😅", k: "relief nervous laugh sweat face" },
+  { e: "😂", k: "laugh cry funny lol face joy" },
+  { e: "🤣", k: "laugh rofl funny face" },
+  { e: "🙂", k: "smile slight happy ok face" },
+  { e: "🙃", k: "upside down silly playful face" },
+  { e: "😉", k: "wink playful face" },
+  { e: "😊", k: "happy smile content warm face" },
+  { e: "😇", k: "angel innocent good face" },
+  { e: "🥰", k: "love adore hearts happy face" },
+  { e: "😍", k: "love heart eyes adore face" },
+  { e: "🤩", k: "star struck amazed wow excited face" },
+  { e: "😘", k: "kiss love face" },
+  { e: "😋", k: "yum tasty happy face" },
+  { e: "😎", k: "cool sunglasses confident face" },
+  { e: "🥳", k: "party celebrate birthday face" },
+  { e: "😌", k: "calm relieved content peace face" },
+  { e: "😏", k: "smirk sly confident face" },
+  { e: "🥲", k: "happy tears bittersweet face" },
+  { e: "🥹", k: "holding back tears touched grateful face" },
+  { e: "😐", k: "neutral meh blank face" },
+  { e: "😑", k: "expressionless blank face" },
+  { e: "😶", k: "no words speechless blank face" },
+  { e: "🙄", k: "eye roll annoyed face" },
+  { e: "😬", k: "grimace awkward nervous face" },
+  { e: "🤔", k: "thinking wonder hmm face" },
+  { e: "😕", k: "confused unsure slight frown face" },
+  { e: "🙁", k: "slight frown sad face" },
+  { e: "😟", k: "worried concerned sad face" },
+  { e: "😣", k: "persevere struggle frustrated face" },
+  { e: "😖", k: "confounded frustrated face" },
+  { e: "😩", k: "weary tired frustrated face" },
+  { e: "😫", k: "tired exhausted overwhelmed face" },
+  { e: "🥺", k: "pleading sad cute begging face" },
+  { e: "😤", k: "frustrated determined huff face" },
+  { e: "😡", k: "angry mad rage face" },
+  { e: "🤬", k: "swearing furious angry face" },
+  { e: "😳", k: "flushed shocked embarrassed face" },
+  { e: "🥵", k: "hot overwhelmed burnout face" },
+  { e: "🥶", k: "cold freezing face" },
+  { e: "😱", k: "scream shocked fear face" },
+  { e: "😨", k: "fearful scared anxious face" },
+  { e: "😥", k: "sad disappointed relieved face" },
+  { e: "😓", k: "sweat stressed tired face" },
+  { e: "🤗", k: "hug warm comfort face" },
+  { e: "🤭", k: "giggle shy oops face" },
+  { e: "😔", k: "sad down pensive low face" },
+  { e: "😞", k: "disappointed sad low face" },
+  { e: "😢", k: "cry sad tear face" },
+  { e: "😭", k: "sob crying very sad grief face" },
+  { e: "😪", k: "sleepy tired face" },
+  { e: "😴", k: "sleep tired exhausted face" },
+  { e: "🤒", k: "sick ill fever face" },
+  { e: "🤕", k: "hurt injured face" },
+  { e: "🤯", k: "mind blown shocked overwhelmed face" },
+  { e: "😵", k: "dizzy overwhelmed dazed face" },
+  { e: "🫠", k: "melting overwhelmed done face" },
 ];
 
 export default function LifeGraphApp({ initialState, account, onPersist, onRequestAuth }) {
@@ -125,6 +190,10 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
   const [events, setEvents] = React.useState(init.events);
   const [title, setTitle] = React.useState(init.title);
   const [subtitle, setSubtitle] = React.useState(init.subtitle);
+  const [eras, setEras] = React.useState(
+    Array.isArray(init.eras) && init.eras.length ? init.eras : DEFAULT_ERAS
+  );
+  const [editingEra, setEditingEra] = React.useState(null);
   const [selected, setSelected] = React.useState(null);
   const [dragId, setDragId] = React.useState(null);
   const [hoverId, setHoverId] = React.useState(null);
@@ -134,15 +203,52 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
   const [emojiMore, setEmojiMore] = React.useState(false);
   const [emojiQuery, setEmojiQuery] = React.useState("");
   const [exporting, setExporting] = React.useState(false);
+  const [canUndo, setCanUndo] = React.useState(false);
+  const [phasePop, setPhasePop] = React.useState(null);
   const svgRef = React.useRef(null);
 
   // persist (debounced) — parent decides where it goes (Supabase + local cache)
   React.useEffect(() => {
     const t = setTimeout(() => {
-      onPersist({ events: events.filter((e) => e.title && e.title.trim()), title, subtitle, todayAge });
+      onPersist({ events: events.filter((e) => e.title && e.title.trim()), title, subtitle, todayAge, eras });
     }, 400);
     return () => clearTimeout(t);
-  }, [events, title, subtitle, todayAge, onPersist]);
+  }, [events, title, subtitle, todayAge, eras, onPersist]);
+
+  // ---- undo: record settled snapshots (drags/typing coalesce via the debounce) ----
+  const histRef = React.useRef([]);
+  const committedRef = React.useRef({ events: init.events, title: init.title, subtitle: init.subtitle, eras: (Array.isArray(init.eras) && init.eras.length ? init.eras : DEFAULT_ERAS), todayAge: (init.todayAge != null ? init.todayAge : Math.max(0, ...init.events.map((e) => e.age))) });
+  React.useEffect(() => {
+    const t = setTimeout(() => {
+      const next = { events, title, subtitle, eras, todayAge };
+      if (JSON.stringify(next) !== JSON.stringify(committedRef.current)) {
+        histRef.current.push(committedRef.current);
+        if (histRef.current.length > 60) histRef.current.shift();
+        committedRef.current = next;
+        setCanUndo(histRef.current.length > 0);
+      }
+    }, 350);
+    return () => clearTimeout(t);
+  }, [events, title, subtitle, eras, todayAge]);
+  function undo() {
+    if (!histRef.current.length) return;
+    const prev = histRef.current.pop();
+    committedRef.current = prev;   // so the snapshot effect doesn't re-record this restore
+    setEvents(prev.events); setTitle(prev.title); setSubtitle(prev.subtitle);
+    setEras(prev.eras); setTodayAge(prev.todayAge);
+    setSelected(null); setEditingEra(null);
+    setCanUndo(histRef.current.length > 0);
+  }
+  const undoRef = React.useRef(undo); undoRef.current = undo;
+  React.useEffect(() => {
+    const onKey = (e) => {
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && (e.key === "z" || e.key === "Z")) {
+        e.preventDefault(); undoRef.current();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
 
   // draw-on reveal
   React.useEffect(() => { const t = setTimeout(() => setMounted(true), 40); return () => clearTimeout(t); }, []);
@@ -237,22 +343,37 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
     return pt.matrixTransform(m);
   }
 
+  const dragRef = React.useRef(null);
   function startDrag(evt, id) {
     evt.stopPropagation();
     evt.preventDefault();
-    setSelected(null);
     setDragId(id);
+    // remember what was open so a click can toggle the editor closed
+    dragRef.current = { dragId: id, moved: false, x: evt.clientX, y: evt.clientY, wasSelected: selected };
     window.addEventListener("pointermove", onMove);
     window.addEventListener("pointerup", endDrag);
   }
-  const dragRef = React.useRef(null);
-  React.useEffect(() => { dragRef.current = { dragId, sorted }; });
   function onMove(evt) {
-    const { dragId } = dragRef.current;
-    if (!dragId) return;
+    const d = dragRef.current;
+    if (!d || !d.dragId) return;
+    if (!d.moved) {                 // ignore micro-movement so a click isn't read as a drag
+      const dx = evt.clientX - d.x, dy = evt.clientY - d.y;
+      if (dx * dx + dy * dy < 16) return;
+      d.moved = true;
+      setSelected(null);            // a real drag started → close any open editor
+    }
     const p = toSvg(evt);
-    const newSat = satOf(p.y);            // vertical drag only — age stays fixed
-    setEvents((prev) => prev.map((e) => e.id === dragId ? { ...e, sat: Math.round(newSat) } : e));
+    const newSat = satOf(p.y);      // vertical drag only — age stays fixed
+    setEvents((prev) => prev.map((e) => e.id === d.dragId ? { ...e, sat: Math.round(newSat) } : e));
+  }
+  function endDrag() {
+    const d = dragRef.current;
+    window.removeEventListener("pointermove", onMove);
+    window.removeEventListener("pointerup", endDrag);
+    // a press with no real drag is a click → toggle that moment's editor
+    if (d && d.dragId && !d.moved) setSelected(d.wasSelected === d.dragId ? null : d.dragId);
+    setDragId(null);
+    dragRef.current = null;
   }
   // draggable "today" marker (horizontal) to set current age
   function startTodayDrag(evt) {
@@ -271,18 +392,21 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
   }
   const domainMaxRef = React.useRef(domainMax);
   React.useEffect(() => { domainMaxRef.current = domainMax; });
-  function endDrag() {
-    setDragId(null);
-    window.removeEventListener("pointermove", onMove);
-    window.removeEventListener("pointerup", endDrag);
-  }
 
   function addAt(age, sat) {
     const e = { id: uid(), title: "", note: "", emoji: "", age: +clamp(age, 0, domainMax).toFixed(2), sat: Math.round(clamp(sat, 0, 100)) };
     setEvents((prev) => [...prev, e]);
     setSelected(e.id);
   }
+  // single click on empty canvas just dismisses an open editor — never adds
   function bgClick(evt) {
+    if (dragId) return;
+    if (evt.target.closest && evt.target.closest(".lg-flag, .lg-today, .lg-pop, .lg-phase-pop, .lg-era-label")) return; // not the canvas
+    if (selected) setSelected(null);
+    if (editingEra != null) setEditingEra(null);
+  }
+  // a moment is added only on a deliberate double-click of empty canvas
+  function bgDoubleClick(evt) {
     if (dragId) return;
     if (evt.target.closest && evt.target.closest(".lg-flag, .lg-today, .lg-pop")) return; // not the canvas
     const p = toSvg(evt);
@@ -291,10 +415,28 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
   }
   function patch(id, k, v) { setEvents((prev) => prev.map((e) => e.id === id ? { ...e, [k]: v } : e)); }
   function remove(id) { setEvents((prev) => prev.filter((e) => e.id !== id)); setSelected(null); }
+  // ---- phases (eras): rename / move / add / delete ----
+  function renamePhase(idx, label) { setEras((prev) => prev.map((e, i) => (i === idx ? { ...e, label } : e))); }
+  function setPhaseFrom(idx, age) {
+    const v = clamp(Math.round(+age || 0), 0, domainMax);
+    setEras((prev) => prev.map((e, i) => (i === idx ? { ...e, from: v } : e)));
+  }
+  function addPhaseAfter(idx) {
+    const cur = eras[idx];
+    const later = eras.map((e) => e.from).filter((f) => f > cur.from).sort((a, b) => a - b);
+    const nextFrom = later.length ? later[0] : domainMax;
+    const from = clamp(Math.round((cur.from + nextFrom) / 2), 0, domainMax);
+    setEras((prev) => [...prev, { from, label: "New phase" }]);
+    setEditingEra(eras.length);   // open the newly added phase for naming
+  }
+  function deletePhase(idx) {
+    setEras((prev) => (prev.length <= 1 ? prev : prev.filter((_, i) => i !== idx)));
+    setEditingEra(null);
+  }
 
   // ---- export to PNG (with fonts embedded so it looks right) ----
   async function embedFontCss() {
-    const url = "https://fonts.googleapis.com/css2?family=Caveat:wght@700&family=Spectral:ital,wght@0,400;0,500;0,600;1,400&display=swap";
+    const url = "https://fonts.googleapis.com/css2?family=Caveat:wght@400;500;600;700&family=Spectral:ital,wght@0,300;0,400;0,500;0,600;1,400;1,500&display=swap";
     let css = await (await fetch(url)).text();
     const found = [...css.matchAll(/url\((https:[^)]+\.woff2)\)/g)].map((m) => m[1]);
     const uniq = [...new Set(found)];
@@ -311,18 +453,64 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
   async function exportPNG() {
     if (exporting) return;
     setExporting(true);
-    setSelected(null);
+    setSelected(null); setHoverId(null); setDragId(null);
     try {
+      const NS = "http://www.w3.org/2000/svg";
+      const esc = (s) => String(s || "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      // a shared image isn't interactive — strip any "drag a point…" instruction
+      // clause from the subtitle so it reads as a description, not a UI hint
+      const exportSubtitle = ((subtitle || "").replace(/\s*[—–-]\s*drag\b.*/i, "").trim()) || subtitle;
+      // give the export a dedicated header band so the title/subtitle never
+      // collide with the chart's top labels (on screen those live in HTML above)
+      const HEADER = 116;
+      const EXP_H = VBH + HEADER;
+      // crop the right edge to a little past "today" (or the furthest moment) so
+      // the shared image isn't dominated by an empty future band; the SVG viewBox
+      // clips cleanly, so trailing ticks/axis simply end there
+      const lastAge = Math.max(todayAge, ...events.map((e) => e.age));
+      const cropAge = Math.min(domainMax, Math.ceil((lastAge + 2) / 5) * 5);
+      const EXP_W = Math.min(VBW, Math.round(xOf(cropAge) + 70));
       const node = svgRef.current.cloneNode(true);
-      node.setAttribute("width", VBW); node.setAttribute("height", VBH);
-      // paper background
-      const bg = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-      bg.setAttribute("x", 0); bg.setAttribute("y", 0); bg.setAttribute("width", VBW); bg.setAttribute("height", VBH); bg.setAttribute("fill", COL.paper);
+      node.setAttribute("viewBox", `0 0 ${EXP_W} ${EXP_H}`);
+      node.setAttribute("width", EXP_W); node.setAttribute("height", EXP_H);
+      // push the whole chart down below the header band
+      const chartG = document.createElementNS(NS, "g");
+      chartG.setAttribute("transform", `translate(0, ${HEADER})`);
+      while (node.firstChild) chartG.appendChild(node.firstChild);
+      node.appendChild(chartG);
+      // drop interactive-only guidance so the shared image reads as a finished
+      // keepsake, not a screenshot of a tool (keeps the shaded "future" band)
+      chartG.querySelectorAll(".lg-future text").forEach((n) => n.remove());
+      // never bake in a transient hover/drag feeling face
+      chartG.querySelectorAll(".lg-face").forEach((n) => n.remove());
+      // paper background (full canvas)
+      const bg = document.createElementNS(NS, "rect");
+      bg.setAttribute("x", 0); bg.setAttribute("y", 0); bg.setAttribute("width", EXP_W); bg.setAttribute("height", EXP_H); bg.setAttribute("fill", COL.paper);
       node.insertBefore(bg, node.firstChild);
+      // bake the paper grain into the export (it lives on the page bg on screen)
+      const grain = document.createElementNS(NS, "rect");
+      grain.setAttribute("x", 0); grain.setAttribute("y", 0); grain.setAttribute("width", EXP_W); grain.setAttribute("height", EXP_H);
+      grain.setAttribute("filter", "url(#grain)"); grain.setAttribute("opacity", "0.5");
+      node.appendChild(grain);
+      // title / subtitle / legend / frame / attribution — the on-screen header is
+      // HTML, so it isn't in the SVG; bake a polished version into the export
+      const deco = document.createElementNS(NS, "g");
+      deco.innerHTML =
+        `<rect x="16" y="16" width="${EXP_W - 32}" height="${EXP_H - 32}" rx="20" fill="none" stroke="#D8CBAC" stroke-width="2" opacity="0.85"/>` +
+        `<text x="${MARG.l}" y="64" font-family="Spectral, serif" font-style="italic" font-weight="600" font-size="40" fill="${COL.ink}">${esc(title)}</text>` +
+        `<text x="${MARG.l}" y="96" font-family="Caveat, cursive" font-size="26" fill="${COL.terra}">${esc(exportSubtitle)}</text>` +
+        `<text x="${EXP_W - 40}" y="${EXP_H - 26}" text-anchor="end" font-family="Spectral, serif" font-style="italic" font-size="15" fill="${COL.inkSoft}" opacity="0.75">made with ArcLine · arcline-dun.vercel.app</text>`;
+      node.appendChild(deco);
       try {
         const css = await embedFontCss();
-        const st = document.createElementNS("http://www.w3.org/2000/svg", "style");
-        st.textContent = css;
+        const st = document.createElementNS(NS, "style");
+        // embed the webfonts AND the class→font-family rules (those live in the
+        // external stylesheet, which a standalone SVG can't see)
+        st.textContent = css +
+          `\ntext{font-family:'Spectral',serif;}` +
+          `\n.t-hand{font-family:'Caveat',cursive;}` +
+          `\n.t-ital{font-family:'Spectral',serif;font-style:italic;}` +
+          `\n.t-era{font-family:'Spectral',serif;letter-spacing:3px;}`;
         node.insertBefore(st, node.firstChild);
       } catch (e) { /* fall back to system fonts */ }
       const xml = new XMLSerializer().serializeToString(node);
@@ -331,10 +519,10 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
         const img = new Image();
         img.onload = () => {
           const s = 2, canvas = document.createElement("canvas");
-          canvas.width = VBW * s; canvas.height = VBH * s;
+          canvas.width = EXP_W * s; canvas.height = EXP_H * s;
           const ctx = canvas.getContext("2d");
           ctx.fillStyle = COL.paper; ctx.fillRect(0, 0, canvas.width, canvas.height);
-          ctx.scale(s, s); ctx.drawImage(img, 0, 0, VBW, VBH);
+          ctx.scale(s, s); ctx.drawImage(img, 0, 0, EXP_W, EXP_H);
           URL.revokeObjectURL(url);
           canvas.toBlob((b) => {
             const a = document.createElement("a");
@@ -352,7 +540,7 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
   }
 
   React.useEffect(() => {
-    const k = (e) => { if (e.key === "Escape") setSelected(null); };
+    const k = (e) => { if (e.key === "Escape") { setSelected(null); setEditingEra(null); } };
     window.addEventListener("keydown", k);
     return () => window.removeEventListener("keydown", k);
   }, []);
@@ -368,14 +556,35 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
     if (!selected || !svgRef.current) { setPop(null); return; }
     const ev = events.find((e) => e.id === selected);
     if (!ev) { setPop(null); return; }
+    // Map the dot's SVG coords to screen pixels via the live CTM — this is exact
+    // even though the SVG is letterboxed (preserveAspectRatio), so the card lines
+    // up directly with the moment's icon.
     const r = svgRef.current.getBoundingClientRect();
-    const px = xOf(ev.age), py = yOf(ev.sat);
-    let left = r.left + (px / VBW) * r.width;
-    const top = r.top + (py / VBH) * r.height;
-    const place = (py < 300) ? "below" : "above";
-    left = clamp(left, r.left + 150, r.right - 150);
-    setPop({ left: left, top: top, place: place });
+    const ctm = svgRef.current.getScreenCTM();
+    const sp = svgRef.current.createSVGPoint();
+    sp.x = xOf(ev.age); sp.y = yOf(ev.sat);
+    const scr = sp.matrixTransform(ctm);
+    const place = scr.y < r.top + r.height * 0.42 ? "below" : "above";
+    const left = clamp(scr.x, r.left + 150, r.right - 150);
+    setPop({ left: left, top: scr.y, place: place });
   }, [selected]);
+
+  // phase editor popover — anchored above the phase's label band
+  React.useEffect(() => {
+    if (editingEra == null || !svgRef.current || !eras[editingEra]) { setPhasePop(null); return; }
+    const ordered = eras.map((x, i) => ({ ...x, idx: i })).sort((a, b) => a.from - b.from);
+    const oi = ordered.findIndex((o) => o.idx === editingEra);
+    const e = ordered[oi];
+    const next = ordered[oi + 1];
+    const to = Math.min(next ? next.from : domainMax, domainMax);
+    const cx = (xOf(e.from) + xOf(to)) / 2;
+    const r = svgRef.current.getBoundingClientRect();
+    const ctm = svgRef.current.getScreenCTM();
+    const sp = svgRef.current.createSVGPoint();
+    sp.x = cx; sp.y = PLOT.y1 + 60;
+    const scr = sp.matrixTransform(ctm);
+    setPhasePop({ left: clamp(scr.x, r.left + 120, r.right - 120), top: scr.y });
+  }, [editingEra, eras, domainMax]);
 
   const linePath = pts.length >= 2 ? catmull(pts.map((p) => ({ x: p.px, y: p.py })), 1) : "";
 
@@ -399,11 +608,8 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
               <button className="lg-acct-btn lg-acct-save" onClick={onRequestAuth}>Sign in to save</button>
             </div>
           )}
-          <div className="lg-legend">
-            <span><i className="sw" style={{ background: COL.growth }}></i>climbing</span>
-            <span><i className="sw" style={{ background: COL.decline }}></i>harder days</span>
-          </div>
           <div className="lg-btns">
+            <button className="lg-add ghost" onClick={undo} disabled={!canUndo} title="Undo (⌘/Ctrl+Z)"><span className="lg-undo-ico">↩</span> Undo</button>
             <button className="lg-add ghost" onClick={exportPNG} disabled={exporting}>{exporting ? "Exporting…" : "↓ Export image"}</button>
             <button className="lg-add" onClick={() => addAt(domainMax * 0.5, 50)}>＋ Add a moment</button>
           </div>
@@ -411,7 +617,7 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
       </header>
 
       <div className="lg-stage">
-        <svg ref={svgRef} viewBox={`0 0 ${VBW} ${VBH}`} className="lg-svg" onClick={bgClick}>
+        <svg ref={svgRef} viewBox={`0 0 ${VBW} ${VBH}`} className="lg-svg" onClick={bgClick} onDoubleClick={bgDoubleClick}>
           <defs>
             <filter id="grain"><feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="2" stitchTiles="stitch" result="n" />
               <feColorMatrix in="n" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.045 0" /></filter>
@@ -445,17 +651,29 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
           ))}
           <text x={PLOT.x1 + 12} y={PLOT.y1 + 34} textAnchor="start" className="t-ital" fontSize="16" fill={COL.inkSoft}>age →</text>
 
-          {DEFAULT_ERAS.map((e, i) => {
-            const to = Math.min(e.to, domainMax);
-            if (e.from >= domainMax) return null;
-            const cx = (xOf(e.from) + xOf(to)) / 2;
-            return (
-              <g key={i}>
-                <line x1={xOf(e.from) + 6} y1={PLOT.y1 + 52} x2={xOf(to) - 6} y2={PLOT.y1 + 52} stroke={COL.inkSoft} strokeWidth="1" opacity="0.4" />
-                <text x={cx} y={PLOT.y1 + 73} textAnchor="middle" className="t-era" fill={COL.inkSoft}>{e.label}</text>
-              </g>
-            );
-          })}
+          {/* phases: spans derived from the data; double-click a label to edit
+              (rename / move / add / delete) via a popover */}
+          {(() => {
+            const ordered = eras.map((e, idx) => ({ ...e, idx })).sort((a, b) => a.from - b.from);
+            return ordered.map((e, i) => {
+              if (e.from >= domainMax) return null;
+              const next = ordered[i + 1];
+              const to = Math.min(next ? next.from : domainMax, domainMax);
+              if (to <= e.from) return null;
+              const cx = (xOf(e.from) + xOf(to)) / 2;
+              const active = editingEra === e.idx;
+              return (
+                <g key={e.idx}>
+                  <line x1={xOf(e.from) + 6} y1={PLOT.y1 + 52} x2={xOf(to) - 6} y2={PLOT.y1 + 52} stroke={active ? COL.gold : COL.inkSoft} strokeWidth="1" opacity={active ? 0.7 : 0.4} />
+                  <text x={cx} y={PLOT.y1 + 73} textAnchor="middle" className="t-era lg-era-label" fill={active ? COL.gold : COL.inkSoft}
+                    onClick={(ev) => ev.stopPropagation()}
+                    onDoubleClick={(ev) => { ev.stopPropagation(); setEditingEra(e.idx); }}>
+                    <title>double-click to edit this phase</title>{e.label}
+                  </text>
+                </g>
+              );
+            });
+          })()}
 
           {/* line (draws on via CSS) */}
           <g className={"lg-line" + (mounted ? " in" : "")}>
@@ -466,63 +684,93 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
           </g>
 
           {/* today marker (draggable horizontally to set current age) */}
-          <g className="lg-today" style={{ cursor: "ew-resize" }} onPointerDown={startTodayDrag}>
-            <line x1={xOf(todayAge)} y1={PLOT.y0 - 16} x2={xOf(todayAge)} y2={PLOT.y1 + 6} stroke={COL.gold} strokeWidth="1.6" strokeDasharray="4 5" />
-            <rect x={xOf(todayAge) - 12} y={PLOT.y0 - 16} width="24" height={PLOT.y1 - PLOT.y0 + 22} fill="transparent" />
-            <g transform={`translate(${xOf(todayAge)}, ${PLOT.y0 - 20})`}>
-              <rect x="-27" y="-22" width="54" height="21" rx="6" fill={COL.gold} />
-              <text x="0" y="-7" textAnchor="middle" className="t-hand" fontSize="17" fontWeight="700" fill="#FBF1DC">today</text>
-              <path d="M-6,-1 L6,-1 L0,7 Z" fill={COL.gold} />
-            </g>
-          </g>
+          {(() => {
+            const tx = xOf(todayAge);
+            const right = tx < PLOT.x1 - 70;   // keep the flag on whichever side has room
+            const dir = right ? 1 : -1;
+            // if a moment sits at today, drop the flag just below its dot so it
+            // never collides with that moment's label (which sits above)
+            const coincident = pts.find((p) => Math.abs(p.age - todayAge) < 0.6);
+            const flagY = coincident ? coincident.py + 32 : PLOT.y0 + 30;
+            return (
+              <g className="lg-today" style={{ cursor: "ew-resize" }} onPointerDown={startTodayDrag}>
+                <line x1={tx} y1={PLOT.y0 - 16} x2={tx} y2={PLOT.y1 + 6} stroke={COL.gold} strokeWidth="1.6" strokeDasharray="4 5" />
+                <rect x={tx - 12} y={PLOT.y0 - 16} width="24" height={PLOT.y1 - PLOT.y0 + 22} fill="transparent" />
+                {/* horizontal flag beside the line, pointing at it */}
+                <g transform={`translate(${tx}, ${flagY})`}>
+                  <path d={right ? "M5,-5 L5,5 L-2,0 Z" : "M-5,-5 L-5,5 L2,0 Z"} fill={COL.gold} />
+                  <rect x={right ? 5 : -59} y="-11" width="54" height="22" rx="6" fill={COL.gold} />
+                  <text x={dir * 32} y="5" textAnchor="middle" className="t-hand" fontSize="17" fontWeight="700" fill="#FBF1DC">today</text>
+                </g>
+              </g>
+            );
+          })()}
 
           {/* moments */}
           {pts.map((p, i) => {
             const isToday = Math.abs(p.age - todayAge) < 0.5;
             const isFuture = p.age > todayAge + 0.4;
             const isActive = p.id === dragId || p.id === hoverId || p.id === selected;
+            const hovering = p.id === dragId || p.id === hoverId;
             const L = lay[i];
             const above = L.side === "above";
             const ty = L.ty;
+            // a custom emoji is always the icon; otherwise it's the normal dot,
+            // and the feeling face only appears while hovering/dragging
+            const glyph = p.emoji || (hovering ? satFace(p.sat) : null);
+            const gsize = isActive ? 31 : 27;
+            const disc = isActive ? 19 : 17;
             const markCol = isToday ? COL.gold : (isFuture ? "#A89A7C" : COL.ink);
-            const leaderTop = above ? (p.emoji ? p.py - 30 : p.py - 13) : (p.py + 13);
+            const leaderTop = above
+              ? (glyph ? p.py - (disc + 3) : p.py - 13)
+              : (glyph ? p.py + (disc + 3) : p.py + 13);
             const leaderEnd = above ? ty + (p.note ? 23 : 7) : ty - 16;
             return (
               <g key={p.id} className={"lg-flag" + (mounted ? " in" : "")} style={{ cursor: "grab", transitionDelay: (0.25 + i * 0.09) + "s" }}
                 onPointerDown={(e) => startDrag(e, p.id)}
-                onPointerEnter={() => setHoverId(p.id)} onPointerLeave={() => setHoverId(null)}
-                onDoubleClick={(e) => { e.stopPropagation(); setSelected(p.id); }}>
+                onPointerEnter={() => setHoverId(p.id)} onPointerLeave={() => setHoverId(null)}>
                 {/* leader from point to label (vertical, or angled near the edges) */}
                 <line x1={p.px} y1={leaderTop} x2={L.lx} y2={leaderEnd} stroke={COL.inkSoft} strokeWidth="1" opacity="0.32" />
-                {/* emoji above the point, if set */}
-                {p.emoji ? <text x={p.px} y={p.py - 15} textAnchor="middle" fontSize="26" opacity={isFuture ? 0.85 : 1}>{p.emoji}</text> : null}
-                {/* the marker dot */}
-                <circle cx={p.px} cy={p.py} r={isActive ? 9.5 : 7.5} fill={COL.paper} stroke={markCol} strokeWidth="2.8" strokeDasharray={isFuture ? "3 3" : "none"} />
-                <circle cx={p.px} cy={p.py} r="2.8" fill={markCol} />
+                {glyph ? (
+                  <>
+                    {/* paper halo so the emoji/face reads cleanly over the line */}
+                    <circle cx={p.px} cy={p.py} r={disc} fill={COL.paper} opacity={isFuture ? 0.55 : 0.92}
+                      stroke={isToday ? COL.gold : "none"} strokeWidth={isToday ? 1.6 : 0} strokeDasharray={isFuture ? "3 3" : "none"} />
+                    {/* baseline-offset so the emoji's ink (not its glyph box) centers on the dot */}
+                    <text x={p.px} y={p.py + gsize * 0.34} textAnchor="middle" fontSize={gsize} opacity={isFuture ? 0.7 : 1}>{glyph}</text>
+                  </>
+                ) : (
+                  <>
+                    {/* default marker dot */}
+                    <circle cx={p.px} cy={p.py} r={isActive ? 9.5 : 7.5} fill={COL.paper} stroke={markCol} strokeWidth="2.8" strokeDasharray={isFuture ? "3 3" : "none"} />
+                    <circle cx={p.px} cy={p.py} r="2.8" fill={markCol} />
+                  </>
+                )}
                 {/* hit area */}
                 <circle cx={p.px} cy={p.py} r="22" fill="transparent" />
                 {/* label */}
                 <text x={L.lx} y={ty} textAnchor={L.anchor} className="t-hand" fontSize="25" fontWeight="700" fill={isFuture ? "#8C7F63" : COL.ink} fontStyle={isFuture ? "italic" : "normal"}>{p.title}</text>
                 {p.note ? <text x={L.lx} y={ty + 18} textAnchor={L.anchor} className="t-ital" fontSize="14" fill={COL.inkSoft}>{p.note}</text> : null}
-                {/* feeling face while dragging/hovering — offset to the side, clear of the cursor */}
-                {(p.id === dragId || p.id === hoverId) ? (() => {
-                  const fs = p.px > (PLOT.x0 + PLOT.x1) / 2 ? -1 : 1;
-                  const fx = p.px + fs * 42, fy = p.py;
-                  return (
-                    <g style={{ pointerEvents: "none" }}>
-                      <circle cx={fx} cy={fy - 9} r="19" fill={COL.paper} opacity="0.9" />
-                      <text x={fx} y={fy} textAnchor="middle" fontSize="30">{satFace(p.sat)}</text>
-                    </g>
-                  );
-                })() : null}
               </g>
             );
           })}
-
-          <rect x="0" y="0" width={VBW} height={VBH} filter="url(#grain)" opacity="0.5" pointerEvents="none" />
         </svg>
 
-        <p className="lg-hint">drag a point ↕ to set the feeling · double-click to edit age, emoji &amp; more · click past “today” to drop a future goal · drag the gold ‘today’ line to set your age</p>
+        {/* tips revealed on hover/focus of the "?" so they don't crowd the canvas */}
+        <div className="lg-help">
+          <div className="lg-help-card" role="tooltip">
+            <p className="lg-help-title">Tips</p>
+            <ul>
+              <li><b>Click</b> a moment to edit it</li>
+              <li><b>Drag</b> a point ↕ to set how it felt</li>
+              <li><b>Double-click</b> the graph to add a moment</li>
+              <li><b>Double-click</b> a phase to rename, move, add or remove it</li>
+              <li>Drag the gold <b>today</b> line to set your age</li>
+              <li><b>⌘/Ctrl + Z</b> to undo</li>
+            </ul>
+          </div>
+          <button className="lg-help-btn" aria-label="show tips">?</button>
+        </div>
 
         {sel && pop ? (
           <div className={"lg-pop" + (pop.place === "below" ? " below" : "")} style={{ left: pop.left, top: pop.top }} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
@@ -541,7 +789,7 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
               <div className="lg-emolib">
                 <input className="lg-emsearch" autoFocus value={emojiQuery} onChange={(e) => setEmojiQuery(e.target.value)} placeholder="search emoji — travel, love, work…" />
                 <div className="lg-emgrid">
-                  {EMOJI_LIB.filter((x) => !emojiQuery.trim() || x.k.includes(emojiQuery.trim().toLowerCase()) || x.e === emojiQuery.trim()).slice(0, 60).map((x) => (
+                  {EMOJI_LIB.filter((x) => !emojiQuery.trim() || x.k.includes(emojiQuery.trim().toLowerCase()) || x.e === emojiQuery.trim()).filter((x, i, arr) => arr.findIndex((y) => y.e === x.e) === i).slice(0, 60).map((x) => (
                     <button key={x.e} className={"lg-em" + (sel.emoji === x.e ? " on" : "")} onClick={() => patch(sel.id, "emoji", sel.emoji === x.e ? "" : x.e)}>{x.e}</button>
                   ))}
                 </div>
@@ -557,6 +805,22 @@ export default function LifeGraphApp({ initialState, account, onPersist, onReque
               <div className="lg-scale"><span>😭</span><span>😞</span><span>😐</span><span>🙂</span><span>🤩</span></div>
             </label>
             <button className="lg-del" onClick={() => remove(sel.id)}>Delete moment</button>
+          </div>
+        ) : null}
+
+        {editingEra != null && eras[editingEra] && phasePop ? (
+          <div className="lg-phase-pop" style={{ left: phasePop.left, top: phasePop.top }} onClick={(e) => e.stopPropagation()} onPointerDown={(e) => e.stopPropagation()}>
+            <button className="lg-x lg-phase-x" onClick={() => setEditingEra(null)} aria-label="close">✕</button>
+            <input className="lg-in-title lg-phase-name" value={eras[editingEra].label} placeholder="Phase name"
+              onChange={(e) => renamePhase(editingEra, e.target.value)} autoFocus />
+            <label className="lg-lab"><span>Starts at age</span>
+              <input className="lg-phase-from" type="number" min="0" max={domainMax} value={eras[editingEra].from}
+                onChange={(e) => setPhaseFrom(editingEra, e.target.value)} />
+            </label>
+            <div className="lg-phase-actions">
+              <button className="lg-phase-add" onClick={() => addPhaseAfter(editingEra)}>＋ Add phase</button>
+              <button className="lg-del" onClick={() => deletePhase(editingEra)} disabled={eras.length <= 1}>Delete</button>
+            </div>
           </div>
         ) : null}
       </div>

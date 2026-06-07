@@ -1,11 +1,20 @@
-# ArcLine
+<h1 align="center">ArcLine</h1>
 
-**Live app → https://arcline-dun.vercel.app**
+<p align="center"><em>An interactive, hand-drawn line graph of a life — how full each chapter felt, from birth to today.</em></p>
 
-An interactive, hand-drawn line graph of a life — plotting **how full each chapter felt**
-(life satisfaction) from birth to today, with an honest record of the ups *and* downs.
-A warm, personal-journal aesthetic. Start mapping instantly — no account needed; sign in
-with Google to save and sync your graph across devices.
+<p align="center">
+  <a href="https://arcline-dun.vercel.app"><strong>▶ Open the live app</strong></a>
+</p>
+
+<p align="center">
+  <a href="https://arcline-dun.vercel.app">
+    <img src="docs/preview.png" alt="ArcLine — a warm, hand-drawn life-satisfaction graph rising and falling across the chapters of a life" width="680">
+  </a>
+</p>
+
+Plot **how full each chapter felt** (life satisfaction) from birth to today, with an honest
+record of the ups *and* downs — in a warm, personal-journal aesthetic. Start mapping
+instantly (no account needed); sign in with Google to save and sync across devices.
 
 ## Stack
 - **Vite + React** front end (no in-browser Babel anymore — real build step).
